@@ -28,7 +28,6 @@ A modern web application built with Laravel that helps people find their lost it
 
 ### Administrative Features
 - **Flagged Content Management** - Review and restore flagged posts, comments, and messages
-- **Email Notifications** - Automated email alerts for important events and matches
 
 ## Screenshots
 
