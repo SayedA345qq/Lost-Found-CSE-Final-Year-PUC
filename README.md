@@ -142,36 +142,7 @@ Visit `http://localhost:8000` to access the application.
    ```bash
    php artisan posts:generate-embeddings
    ```
-
-## Notification System
-
-The platform features an intelligent notification system that automatically alerts users about potential matches:
-
-### Email Notifications
-- **Lost Item Matches** - Receive emails when someone posts a found item similar to your lost item
-- **Found Item Matches** - Get notified when someone posts a lost item matching your found item
-- **Claim Updates** - Email alerts for claim requests and status updates
-- **Message Alerts** - Notifications for new messages from other users
-
-### In-App Notifications
-- **Real-time Alerts** - Instant notifications within the application
-- **Dashboard Badges** - Visual indicators for new matches and messages
-- **Notification History** - Track all past notifications and their status
-
-### Smart Matching
-- **AI-Powered Matching** - Uses image similarity and text analysis to find potential matches
-- **Category-Based Alerts** - Notifications filtered by item categories and location
-- **Customizable Settings** - Users can control notification frequency and types
-
-## Usage
-
-1. **Register/Login** - Create an account and set notification preferences
-2. **Post Items** - Report lost or found items with photos and detailed descriptions
-3. **Receive Alerts** - Get automatic notifications when potential matches are found
-4. **Search** - Use text search or AI image search to find items manually
-5. **Claim Items** - Contact owners through the secure claim system
-6. **Manage** - Track your posts, notifications, and messages in the dashboard
-
+   
 ## Configuration
 
 Key settings in `.env`:
@@ -207,4 +178,4 @@ This project was developed by students from the **Department of Computer Science
 
 ---
 
-Built with ❤️ by CSE students at Premier University Chattogram using Laravel, AI, and modern web technologies.
+Built with ❤️ by using Laravel, AI, and modern web technologies.
