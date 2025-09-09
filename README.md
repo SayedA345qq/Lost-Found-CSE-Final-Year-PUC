@@ -62,7 +62,7 @@ A modern web application built with Laravel that helps people find their lost it
 
 ## Technology Stack
 
-- **Backend**: Laravel 11.x, PHP 8.2+
+- **Backend**: Laravel 12.x, PHP 8.2+
 - **Frontend**: Tailwind CSS, Alpine.js, Vite
 - **Database**: SQLite (default)
 - **AI**: Python 3.8+, OpenAI CLIP, PyTorch
