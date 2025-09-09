@@ -46,7 +46,7 @@ A modern web application built with Laravel that helps people find their lost it
 
 ### Browse Posts
 ![Create Post](screenshots/2.png)
-*Intuitive form for creating lost/found item posts*
+*Shows all user posts*
 
 ### AI Image Search
 ![AI Search](screenshots/3.png)
