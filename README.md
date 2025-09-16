@@ -32,7 +32,7 @@ A modern web application built with Laravel that helps people find their lost it
 ## Screenshots
 
 ### Landing Page
-![Landing Page](screenshots/landing-page.png)
+![Landing Page](screenshots/landing.png)
 *Modern homepage with hero section and feature highlights*
 
 ### User Dashboard
