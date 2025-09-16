@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::delete('/profile/image', [ProfileController::class, 'removeProfileImage'])->name('profile.remove-image');
 
     // Post routes
     Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
@@ -66,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Comment routes
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::patch('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
     // Message routes
@@ -95,6 +97,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // AI Image Search routes
     Route::get('/ai-search', [AIImageSearchController::class, 'index'])->name('ai-search.index');
     Route::post('/ai-search', [AIImageSearchController::class, 'search'])->name('ai-search.search');
+    Route::post('/ai-search/cleanup', [AIImageSearchController::class, 'cleanup'])->name('ai-search.cleanup');
 });
 
 // Unread count route available to any authenticated user (no email verification required)

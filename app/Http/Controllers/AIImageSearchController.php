@@ -6,6 +6,7 @@ use App\Services\ClipEmbeddingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AIImageSearchController extends Controller
 {
@@ -21,6 +22,9 @@ class AIImageSearchController extends Controller
      */
     public function index()
     {
+        // Clean up any previous search images for this session
+        $this->cleanupPreviousSearchImages();
+        
         return view('ai-search.index');
     }
 
@@ -37,6 +41,9 @@ class AIImageSearchController extends Controller
         $threshold = $request->get('threshold', 0.8);
 
         try {
+            // Clean up any previous search images for this session before storing new one
+            $this->cleanupPreviousSearchImages();
+
             // Generate embedding for the search image
             $searchEmbedding = $this->clipService->generateEmbedding($request->file('search_image'));
             
@@ -51,8 +58,14 @@ class AIImageSearchController extends Controller
 
             Log::info('Found similar posts', ['count' => $similarPosts->total()]);
 
-            // Store the search image temporarily for display
-            $searchImagePath = $request->file('search_image')->store('temp/search', 'public');
+            // Store the search image temporarily for display with session-specific naming
+            $sessionId = $request->session()->getId();
+            $extension = $request->file('search_image')->getClientOriginalExtension();
+            $filename = 'search_' . $sessionId . '_' . time() . '.' . $extension;
+            $searchImagePath = $request->file('search_image')->storeAs('temp/search', $filename, 'public');
+
+            // Store the current search image path in session for cleanup
+            $request->session()->put('current_search_image', $searchImagePath);
 
             return view('ai-search.results', [
                 'similarPosts' => $similarPosts,
@@ -71,4 +84,56 @@ class AIImageSearchController extends Controller
         }
     }
 
+    /**
+     * Clean up previous search images for the current session
+     */
+    private function cleanupPreviousSearchImages()
+    {
+        try {
+            $sessionId = session()->getId();
+            $disk = Storage::disk('public');
+            
+            // Get current search image from session and delete it
+            $currentSearchImage = session('current_search_image');
+            if ($currentSearchImage && $disk->exists($currentSearchImage)) {
+                $disk->delete($currentSearchImage);
+                Log::info('Cleaned up previous search image', ['file' => $currentSearchImage]);
+            }
+
+            // Also clean up any orphaned files for this session (fallback cleanup)
+            $tempSearchPath = 'temp/search';
+            if ($disk->exists($tempSearchPath)) {
+                $files = $disk->files($tempSearchPath);
+                foreach ($files as $file) {
+                    $filename = basename($file);
+                    // Check if file belongs to current session
+                    if (Str::contains($filename, 'search_' . $sessionId . '_')) {
+                        $disk->delete($file);
+                        Log::info('Cleaned up orphaned search image', ['file' => $file]);
+                    }
+                }
+            }
+
+            // Clear the session variable
+            session()->forget('current_search_image');
+
+        } catch (\Exception $e) {
+            Log::warning('Error during search image cleanup', [
+                'error' => $e->getMessage()
+            ]);
+        }
     }
+
+    /**
+     * Manual cleanup endpoint (can be called via AJAX)
+     */
+    public function cleanup(Request $request)
+    {
+        $this->cleanupPreviousSearchImages();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Search images cleaned up successfully'
+        ]);
+    }
+}

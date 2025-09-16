@@ -426,6 +426,55 @@
 
             // Add smooth transitions
             resultsContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+
+            // Session-based cleanup functionality
+            function cleanupSearchImages() {
+                fetch('{{ route("ai-search.cleanup") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }).catch(error => {
+                    console.log('Cleanup request failed:', error);
+                });
+            }
+
+            // Clean up when user navigates away from the page
+            window.addEventListener('beforeunload', function() {
+                cleanupSearchImages();
+            });
+
+            // Clean up when user navigates to a different page (for SPA-like behavior)
+            window.addEventListener('pagehide', function() {
+                cleanupSearchImages();
+            });
+
+            // Clean up when user closes the tab/browser
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    cleanupSearchImages();
+                }
+            });
+
+            // Optional: Clean up after a certain time of inactivity
+            let inactivityTimer;
+            const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+            function resetInactivityTimer() {
+                clearTimeout(inactivityTimer);
+                inactivityTimer = setTimeout(function() {
+                    cleanupSearchImages();
+                }, INACTIVITY_TIMEOUT);
+            }
+
+            // Reset timer on user activity
+            ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(function(event) {
+                document.addEventListener(event, resetInactivityTimer, true);
+            });
+
+            // Start the inactivity timer
+            resetInactivityTimer();
         });
     </script>
 </x-app-layout>

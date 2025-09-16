@@ -112,11 +112,7 @@
                                         <div class="flex-1">
                                             <div class="flex items-center space-x-3">
                                                 <div class="flex-shrink-0">
-                                                    <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                                        <span class="text-sm font-medium text-gray-700">
-                                                            {{ substr($conversation->other_user->name, 0, 1) }}
-                                                        </span>
-                                                    </div>
+                                                    <x-user-avatar :user="$conversation->other_user" size="md" />
                                                 </div>
                                                 <div class="flex-1 min-w-0">
                                                     <div class="flex items-center space-x-2">

@@ -56,7 +56,10 @@
                     @if($messages->count() > 0)
                         <div class="space-y-4 mb-6" style="max-height: 400px; overflow-y: auto;" id="messagesContainer">
                             @foreach($messages as $message)
-                                <div class="flex {{ $message->sender_id === auth()->id() ? 'justify-end' : 'justify-start' }}">
+                                <div class="flex {{ $message->sender_id === auth()->id() ? 'justify-end' : 'justify-start' }} items-start space-x-2">
+                                    @if($message->sender_id !== auth()->id())
+                                        <x-user-avatar :user="$message->sender" size="sm" class="flex-shrink-0 mt-1" />
+                                    @endif
                                     <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg {{ $message->sender_id === auth()->id() ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-900' }}">
                                         <div class="flex justify-between items-start mb-1">
                                             <span class="text-xs {{ $message->sender_id === auth()->id() ? 'text-blue-100' : 'text-gray-500' }}">
@@ -68,6 +71,9 @@
                                         </div>
                                         <p class="text-sm">{{ $message->message }}</p>
                                     </div>
+                                    @if($message->sender_id === auth()->id())
+                                        <x-user-avatar :user="$message->sender" size="sm" class="flex-shrink-0 mt-1" />
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

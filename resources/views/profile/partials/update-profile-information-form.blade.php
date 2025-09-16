@@ -5,7 +5,7 @@
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            {{ __("Update your account's profile information. Email cannot be changed.") }}
+            {{ __("Update your account's profile information and profile picture.") }}
         </p>
     </header>
 
@@ -13,9 +13,45 @@
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6" enctype="multipart/form-data">
         @csrf
         @method('patch')
+
+        <!-- Profile Image Section -->
+        <div class="space-y-4">
+            <x-input-label for="profile_image" :value="__('Profile Picture')" />
+            
+            <!-- Current Profile Image Display -->
+            <div class="flex items-center space-x-6">
+                <div class="shrink-0">
+                    <img id="profile-preview" class="h-20 w-20 object-cover rounded-full border-2 border-gray-300" 
+                         src="{{ $user->getProfileImageUrl() }}" alt="Current profile photo">
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center space-x-4">
+                        <!-- File Input -->
+                        <label for="profile_image" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <span>Change Photo</span>
+                            <input id="profile_image" name="profile_image" type="file" class="sr-only" accept="image/*" onchange="previewImage(this)">
+                        </label>
+                        
+                        <!-- Remove Button (only show if user has a profile image) -->
+                        @if($user->profile_image)
+                            <form method="post" action="{{ route('profile.remove-image') }}" class="inline">
+                                @csrf
+                                @method('delete')
+                                <button type="submit" class="bg-red-100 py-2 px-3 border border-red-300 rounded-md shadow-sm text-sm leading-4 font-medium text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                        onclick="return confirm('Are you sure you want to remove your profile picture?')">
+                                    Remove
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">JPG, PNG, GIF up to 2MB</p>
+                </div>
+            </div>
+            <x-input-error class="mt-2" :messages="$errors->get('profile_image')" />
+        </div>
 
         <div>
             <x-input-label for="name" :value="__('Name')" />
@@ -60,4 +96,18 @@
             @endif
         </div>
     </form>
+
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    document.getElementById('profile-preview').src = e.target.result;
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
 </section>

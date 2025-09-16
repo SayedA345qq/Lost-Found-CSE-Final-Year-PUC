@@ -28,6 +28,25 @@ class CommentController extends Controller
     }
 
     /**
+     * Update a comment
+     */
+    public function update(Request $request, Comment $comment)
+    {
+        // Only comment author can edit
+        if (auth()->id() !== $comment->user_id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:1000'
+        ]);
+
+        $comment->update($validated);
+
+        return back()->with('success', 'Comment updated successfully!');
+    }
+
+    /**
      * Delete a comment
      */
     public function destroy(Comment $comment)

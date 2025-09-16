@@ -95,10 +95,17 @@
 
                     <!-- Posted By -->
                     <div class="border-t pt-4">
-                        <p class="text-sm text-gray-500">
-                            Posted by <span class="font-medium">{{ $post->user->name }}</span> 
-                            on {{ $post->created_at->format('F d, Y \a\t g:i A') }}
-                        </p>
+                        <div class="flex items-center space-x-3">
+                            <x-user-avatar :user="$post->user" size="sm" />
+                            <div>
+                                <p class="text-sm text-gray-500">
+                                    Posted by <span class="font-medium text-gray-900">{{ $post->user->name }}</span>
+                                </p>
+                                <p class="text-xs text-gray-400">
+                                    {{ $post->created_at->format('F d, Y \a\t g:i A') }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -174,9 +181,12 @@
                                 @foreach($post->claims as $claim)
                                     <div class="border rounded-lg p-4">
                                         <div class="flex justify-between items-start mb-2">
-                                            <div>
-                                                <p class="font-medium">{{ $claim->user->name }}</p>
-                                                <p class="text-sm text-gray-500">{{ $claim->created_at->diffForHumans() }}</p>
+                                            <div class="flex items-center space-x-3">
+                                                <x-user-avatar :user="$claim->user" size="sm" />
+                                                <div>
+                                                    <p class="font-medium">{{ $claim->user->name }}</p>
+                                                    <p class="text-sm text-gray-500">{{ $claim->created_at->diffForHumans() }}</p>
+                                                </div>
                                             </div>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                                        {{ $claim->status === 'accepted' ? 'bg-green-100 text-green-800' : 
@@ -226,9 +236,12 @@
                                 @foreach($post->foundNotifications as $foundNotification)
                                     <div class="border rounded-lg p-4">
                                         <div class="flex justify-between items-start mb-2">
-                                            <div>
-                                                <p class="font-medium">{{ $foundNotification->finder->name }}</p>
-                                                <p class="text-sm text-gray-500">{{ $foundNotification->created_at->diffForHumans() }}</p>
+                                            <div class="flex items-center space-x-3">
+                                                <x-user-avatar :user="$foundNotification->finder" size="sm" />
+                                                <div>
+                                                    <p class="font-medium">{{ $foundNotification->finder->name }}</p>
+                                                    <p class="text-sm text-gray-500">{{ $foundNotification->created_at->diffForHumans() }}</p>
+                                                </div>
                                             </div>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                                        {{ $foundNotification->status === 'accepted' ? 'bg-green-100 text-green-800' : 
@@ -292,25 +305,67 @@
                     @if($post->comments->count() > 0)
                         <div class="space-y-4">
                             @foreach($post->comments->where('is_flagged', false) as $comment)
-                                <div class="border-l-4 border-gray-200 pl-4">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <p class="font-medium">{{ $comment->user->name }}</p>
-                                            <p class="text-sm text-gray-500">{{ $comment->created_at->diffForHumans() }}</p>
+                                <div class="flex space-x-3" id="comment-{{ $comment->id }}">
+                                    <x-user-avatar :user="$comment->user" size="sm" class="flex-shrink-0" />
+                                    <div class="flex-1">
+                                        <div class="bg-gray-50 rounded-lg p-3">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <p class="font-medium text-gray-900">{{ $comment->user->name }}</p>
+                                                    <p class="text-xs text-gray-500">{{ $comment->created_at->diffForHumans() }}</p>
+                                                </div>
+                                                @if(auth()->check() && (auth()->id() === $comment->user_id || auth()->id() === $post->user_id))
+                                                    <div class="flex items-center space-x-2">
+                                                        @if(auth()->id() === $comment->user_id)
+                                                            <button type="button" 
+                                                                    onclick="editComment({{ $comment->id }}, '{{ addslashes($comment->message) }}')"
+                                                                    class="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center space-x-1">
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                                </svg>
+                                                                <span>Edit</span>
+                                                            </button>
+                                                        @endif
+                                                        <form method="POST" action="{{ route('comments.destroy', $comment) }}" onsubmit="return false;" class="inline">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="button" 
+                                                                    onclick="confirmDeleteComment(this.form)"
+                                                                    class="text-red-600 hover:text-red-800 text-xs font-medium flex items-center space-x-1">
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                                </svg>
+                                                                <span>Delete</span>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="comment-content">
+                                                <p class="text-gray-700 text-sm">{{ $comment->message }}</p>
+                                            </div>
+                                            <div class="comment-edit-form hidden">
+                                                <form method="POST" action="{{ route('comments.update', $comment) }}" onsubmit="return false;">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <textarea name="message" rows="3" required
+                                                              class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">{{ $comment->message }}</textarea>
+                                                    <div class="flex justify-end space-x-2 mt-2">
+                                                        <button type="button" 
+                                                                onclick="cancelEdit({{ $comment->id }})"
+                                                                class="px-3 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">
+                                                            Cancel
+                                                        </button>
+                                                        <button type="button" 
+                                                                onclick="confirmUpdateComment(this.form, {{ $comment->id }})"
+                                                                class="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded">
+                                                            Save
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
                                         </div>
-                                        @if(auth()->check() && (auth()->id() === $comment->user_id || auth()->id() === $post->user_id))
-                                            <form method="POST" action="{{ route('comments.destroy', $comment) }}" onsubmit="return false;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="button" 
-                                                        onclick="confirmDeleteComment(this.form)"
-                                                        class="text-red-600 hover:text-red-900 text-sm">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        @endif
                                     </div>
-                                    <p class="text-gray-700 mt-2">{{ $comment->message }}</p>
                                 </div>
                             @endforeach
                         </div>
@@ -441,6 +496,36 @@
 
         function closeImageModal() {
             document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        // Comment editing functions
+        function editComment(commentId, currentMessage) {
+            const commentDiv = document.getElementById('comment-' + commentId);
+            const contentDiv = commentDiv.querySelector('.comment-content');
+            const editForm = commentDiv.querySelector('.comment-edit-form');
+            
+            contentDiv.classList.add('hidden');
+            editForm.classList.remove('hidden');
+            
+            // Focus on textarea
+            const textarea = editForm.querySelector('textarea');
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+
+        function cancelEdit(commentId) {
+            const commentDiv = document.getElementById('comment-' + commentId);
+            const contentDiv = commentDiv.querySelector('.comment-content');
+            const editForm = commentDiv.querySelector('.comment-edit-form');
+            
+            contentDiv.classList.remove('hidden');
+            editForm.classList.add('hidden');
+        }
+
+        function confirmUpdateComment(form, commentId) {
+            if (confirm('Are you sure you want to update this comment?')) {
+                form.submit();
+            }
         }
     </script>
 </x-app-layout>
