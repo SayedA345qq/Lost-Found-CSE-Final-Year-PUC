@@ -59,7 +59,6 @@
                                     <ul class="text-sm text-blue-700 space-y-1">
                                         <li>• Use clear, well-lit photos</li>
                                         <li>• Show distinctive features</li>
-                                        <li>• Include multiple angles if possible</li>
                                         <li>• Avoid blurry or dark images</li>
                                     </ul>
                                 </div>
@@ -73,7 +72,6 @@
                                 <div>
                                     <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
                                     <input type="text" name="title" id="title" value="{{ old('title') }}" required
-                                           placeholder="e.g., Black iPhone 14 Pro, Golden Retriever, Blue Backpack"
                                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('title') border-red-500 @enderror">
                                     @error('title')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -124,7 +122,6 @@
                                 <div>
                                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
                                     <textarea name="description" id="description" rows="4" required
-                                              placeholder="Provide detailed description including distinctive features, colors, size, brand, condition, etc."
                                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
                                     @error('description')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -137,7 +134,6 @@
                                     <div>
                                         <label for="location" class="block text-sm font-medium text-gray-700 mb-2">Location *</label>
                                         <input type="text" name="location" id="location" value="{{ old('location') }}" required
-                                               placeholder="e.g., Central Park, Main Street"
                                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('location') border-red-500 @enderror">
                                         @error('location')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
