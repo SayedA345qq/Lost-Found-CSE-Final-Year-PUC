@@ -130,64 +130,7 @@ class ClipEmbeddingService
         return $dotProduct / ($norm1 * $norm2);
     }
 
-    /**
-     * Find similar posts based on image embedding
-     * 
-     * @param array $queryEmbedding
-     * @param float $threshold
-     * @param int $limit
-     * @param array $filters
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function findSimilarPosts(array $queryEmbedding, float $threshold = 0.8, int $limit = 20, array $filters = [])
-    {
-        $query = \App\Models\Post::whereNotNull('embeddings')
-            ->where('images', '!=', null)
-            ->with('user');
-
-        // Apply filters
-        if (!empty($filters['category'])) {
-            $query->where('category', $filters['category']);
-        }
-
-        if (!empty($filters['location'])) {
-            $query->where('location', 'LIKE', '%' . $filters['location'] . '%');
-        }
-
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('date_lost_found', '>=', $filters['date_from']);
-        }
-
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('date_lost_found', '<=', $filters['date_to']);
-        }
-
-        $posts = $query->get();
-
-        $similarities = [];
-
-        foreach ($posts as $post) {
-            if ($post->embeddings) {
-                $similarity = $this->cosineSimilarity($queryEmbedding, $post->embeddings);
-                
-                if ($similarity >= $threshold) {
-                    $similarities[] = [
-                        'post' => $post,
-                        'similarity' => $similarity
-                    ];
-                }
-            }
-        }
-
-        // Sort by similarity (highest first)
-        usort($similarities, function ($a, $b) {
-            return $b['similarity'] <=> $a['similarity'];
-        });
-
-        // Return top results
-        return collect(array_slice($similarities, 0, $limit));
-    }
-
+    
     /**
      * Find similar posts with pagination
      * 

@@ -6,8 +6,6 @@ import torch
 import clip
 from PIL import Image
 import numpy as np
-import base64
-import io
 import os
 
 class LocalClipEmbedding:
@@ -127,54 +125,12 @@ class LocalClipEmbedding:
                 "message": "Failed to generate image embedding"
             }
 
-    def generate_embedding_from_base64(self, base64_data):
-        """Generate CLIP embedding from base64 encoded image"""
-        try:
-            # Remove data URL prefix if present
-            if base64_data.startswith('data:image'):
-                base64_data = base64_data.split(',')[1]
-            
-            # Decode base64 image
-            image_bytes = base64.b64decode(base64_data)
-            image = Image.open(io.BytesIO(image_bytes))
-            
-            # Convert to RGB if necessary
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
-            
-            # Preprocess image
-            image_input = self.preprocess(image).unsqueeze(0).to(self.device)
-            
-            # Generate embedding
-            with torch.no_grad():
-                image_features = self.model.encode_image(image_input)
-                # Normalize the features
-                image_features = image_features / image_features.norm(dim=-1, keepdim=True)
-            
-            # Convert to numpy array and then to list
-            embedding = image_features.cpu().numpy().flatten().tolist()
-            
-            return {
-                "success": True,
-                "embedding": embedding,
-                "embedding_dim": len(embedding),
-                "model": "ViT-B/32",
-                "device": self.device,
-                "message": "Image embedding generated successfully from base64"
-            }
-            
-        except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "message": "Failed to generate image embedding from base64"
-            }
-
+    
 def main():
     if len(sys.argv) < 2:
         print(json.dumps({
             "success": False,
-            "error": "Usage: python local_clip.py <image_path> OR python local_clip.py --base64 <base64_data>"
+            "error": "Usage: python local_clip.py <image_path>"
         }))
         sys.exit(1)
     
@@ -187,27 +143,15 @@ def main():
         # Use verbose mode when run directly, quiet when called from PHP
         clip_model = LocalClipEmbedding(verbose=not quiet_mode)
         
-        if sys.argv[1] == "--base64":
-            if len(sys.argv) != 3:
-                print(json.dumps({
-                    "success": False,
-                    "error": "Base64 data required"
-                }))
-                sys.exit(1)
-            
-            base64_data = sys.argv[2]
-            result = clip_model.generate_embedding_from_base64(base64_data)
-        else:
-            image_path = sys.argv[1]
-            if not os.path.exists(image_path):
-                print(json.dumps({
-                    "success": False,
-                    "error": f"Image file not found: {image_path}"
-                }))
-                sys.exit(1)
-            
-            result = clip_model.generate_embedding(image_path)
+        image_path = sys.argv[1]
+        if not os.path.exists(image_path):
+            print(json.dumps({
+                "success": False,
+                "error": f"Image file not found: {image_path}"
+            }))
+            sys.exit(1)
         
+        result = clip_model.generate_embedding(image_path)
         print(json.dumps(result))
         
     except Exception as e:

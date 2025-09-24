@@ -58,39 +58,7 @@ class LocalClipEmbeddingClient
         return $result;
     }
 
-    /**
-     * Generate embedding from base64 encoded image
-     * 
-     * @param string $base64Image Base64 encoded image
-     * @return array API response
-     */
-    public function generateEmbeddingFromBase64($base64Image)
-    {
-        // Call local Python CLIP script with base64 data and --quiet flag
-        $command = "\"{$this->pythonCommand}\" \"{$this->pythonScript}\" --quiet --base64 \"$base64Image\"";
-        $output = shell_exec($command . ' 2>&1');
-        
-        if ($output === null) {
-            return [
-                'success' => false,
-                'error' => 'Failed to execute Python CLIP script'
-            ];
-        }
-        
-        // Parse JSON response
-        $result = json_decode(trim($output), true);
-        
-        if ($result === null) {
-            return [
-                'success' => false,
-                'error' => 'Failed to parse Python response',
-                'raw_output' => $output
-            ];
-        }
-        
-        return $result;
-    }
-
+    
     /**
      * Generate embedding from Laravel uploaded file
      * 
