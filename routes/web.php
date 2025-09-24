@@ -97,7 +97,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // AI Image Search routes
     Route::get('/ai-search', [AIImageSearchController::class, 'index'])->name('ai-search.index');
     Route::post('/ai-search', [AIImageSearchController::class, 'search'])->name('ai-search.search');
-    Route::post('/ai-search/cleanup', [AIImageSearchController::class, 'cleanup'])->name('ai-search.cleanup');
 });
 
 // Unread count route available to any authenticated user (no email verification required)

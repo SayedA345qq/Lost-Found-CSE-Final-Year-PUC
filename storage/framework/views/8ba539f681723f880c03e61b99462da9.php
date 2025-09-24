@@ -104,7 +104,6 @@ unset($__errorArgs, $__bag); ?>
                                 <div>
                                     <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
                                     <input type="text" name="title" id="title" value="<?php echo e(old('title', $post->title)); ?>" required
-                                           placeholder="e.g., Black iPhone 14 Pro, Golden Retriever, Blue Backpack"
                                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 <?php $__errorArgs = ['title'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -191,7 +190,6 @@ unset($__errorArgs, $__bag); ?>
                                 <div>
                                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
                                     <textarea name="description" id="description" rows="4" required
-                                              placeholder="Provide detailed description including distinctive features, colors, size, brand, condition, etc."
                                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 <?php $__errorArgs = ['description'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -218,7 +216,6 @@ unset($__errorArgs, $__bag); ?>
                                     <div>
                                         <label for="location" class="block text-sm font-medium text-gray-700 mb-2">Location *</label>
                                         <input type="text" name="location" id="location" value="<?php echo e(old('location', $post->location)); ?>" required
-                                               placeholder="e.g., Central Park, Main Street"
                                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 <?php $__errorArgs = ['location'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :

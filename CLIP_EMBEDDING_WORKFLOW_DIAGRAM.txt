@@ -1,0 +1,416 @@
+================================================================================
+                    CLIP EMBEDDING WORKFLOW DIAGRAM
+                    Function Call Flow Documentation
+================================================================================
+
+WORKFLOW 1: EMBEDDING GENERATION FOR NEW POST
+==============================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           POST CREATION WORKFLOW                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. User uploads image via PostController
+   ↓
+   PostController@store()
+   │
+   ├── Request validation
+   ├── Image file handling
+   ├── Post::create() - saves post with image path
+   └─�� (Embedding generation happens separately via command)
+
+2. Manual/Batch Embedding Generation
+   ↓
+   php artisan posts:generate-embeddings
+   │
+   ├── GeneratePostEmbeddings@handle()
+   │   │
+   │   ├── Post::whereNotNull('images')->whereNull('embeddings')->get()
+   │   │
+   │   └── For each post:
+   │       │
+   │       ├── ClipEmbeddingService@generateEmbeddingFromStoragePath($post->images)
+   │       │   │
+   │       │   ├── storage_path('app/public/' . $storagePath)
+   │       │   ├── file_exists($fullPath) - validation
+   │       │   │
+   │       │   └── LocalClipEmbeddingClient@generateEmbeddingFromFile($fullPath)
+   │       │       │
+   │       │       ├── file_exists($imagePath) - validation
+   │       │       ├── shell_exec("python local_clip.py --quiet $imagePath")
+   │       │       │   │
+   │       │       │   └── PYTHON SCRIPT EXECUTION:
+   │       │       │       │
+   │       │       │       ├── LocalClipEmbedding.__init__(verbose=False)
+   │       │       │       │   │
+   │       │       │       │   ├── _select_best_device()
+   │       │       │       │   │   ├── torch.cuda.is_available()
+   │       │       │       │   │   ├── torch.cuda.get_device_properties(0)
+   │       │       │       │   │   └── return "cuda" or "cpu"
+   │       │       │       │   │
+   │       │       │       │   └── clip.load("ViT-B/32", device=self.device)
+   │       │       │       │
+   │       │       │       ├── generate_embedding(image_path)
+   │       │       │       │   │
+   │       │       │       │   ├── Image.open(image_path)
+   │       │       │       │   ├── image.convert('RGB')
+   │       │       │       │   ├── self.preprocess(image).unsqueeze(0)
+   │       │       │       │   ├── torch.no_grad():
+   │       │       │       │   │   ├── self.model.encode_image(image_input)
+   │       │       │       │   │   └── features / features.norm() - normalization
+   │       │       │       │   │
+   │       │       │       │   └── embedding.cpu().numpy().flatten().tolist()
+   │       │       │       │
+   │       │       │       └── json.dumps(result) - return to PHP
+   │       │       │
+   │       │       └── json_decode($output) - parse Python response
+   │       │
+   │       └── $post->update(['embeddings' => $embedding]) - save to database
+   │
+   └── Progress reporting and logging
+
+================================================================================
+
+WORKFLOW 2: AI IMAGE SEARCH PROCESS
+===================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           IMAGE SEARCH WORKFLOW                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. User accesses search page
+   ↓
+   AIImageSearchController@index()
+   │
+   ├── cleanupPreviousSearchImages() - cleanup old temp files
+   │   │
+   │   ├── session()->getId()
+   │   ├── session('current_search_image')
+   │   ├── Storage::disk('public')->exists($currentSearchImage)
+   │   └── Storage::disk('public')->delete($currentSearchImage)
+   │
+   └── return view('ai-search.index')
+
+2. User uploads search image
+   ↓
+   AIImageSearchController@search(Request $request)
+   │
+   ├── $request->validate() - image validation
+   ├── cleanupPreviousSearchImages() - cleanup before new search
+   │
+   ├── ClipEmbeddingService@generateEmbedding($request->file('search_image'))
+   │   │
+   │   ├── $file->isValid() - validation
+   │   │
+   │   └── LocalClipEmbeddingClient@generateEmbeddingFromUploadedFile($file)
+   │       │
+   │       ├── $uploadedFile->isValid() - validation
+   │       ├── $uploadedFile->getPathname() - get temp file path
+   │       │
+   │       └── generateEmbeddingFromFile($pathname)
+   │           │
+   │           ├── shell_exec("python local_clip.py --quiet $imagePath")
+   │           │   │
+   │           │   └── PYTHON SCRIPT EXECUTION:
+   │           │       │
+   │           │       ├── LocalClipEmbedding.__init__(verbose=False)
+   │           │       ├── generate_embedding(image_path)
+   │           │       │   ├── Image.open(image_path)
+   │           │       │   ├── image.convert('RGB')
+   │           │       │   ├── self.preprocess(image)
+   │           │       │   ├── self.model.encode_image(image_input)
+   │           │       │   └── normalize and convert to list
+   │           │       │
+   │           │       └── json.dumps(result)
+   │           │
+   │           └── json_decode($output)
+   │
+   ├── ClipEmbeddingService@findSimilarPostsPaginated($searchEmbedding, $threshold, $request)
+   │   │
+   │   ├── Post::whereNotNull('embeddings')->where('images', '!=', null)->with('user')->get()
+   │   │
+   │   ├── For each post:
+   │   │   │
+   │   │   ├── ClipEmbeddingService@cosineSimilarity($queryEmbedding, $post->embeddings)
+   │   │   │   │
+   │   │   │   ├── count($embedding1) === count($embedding2) - validation
+   │   │   │   ├── Calculate dot product: Σ(a[i] * b[i])
+   │   │   │   ├── Calculate norms: √(Σ(a[i]²)) and √(Σ(b[i]²))
+   │   │   │   └── return dotProduct / (norm1 * norm2)
+   │   │   │
+   │   │   └── if ($similarity >= $threshold) add to results
+   │   │
+   │   ├── usort($similarities) - sort by similarity desc
+   │   ├── collect($similarities) - convert to collection
+   │   ├── $collection->slice() - paginate results
+   │   │
+   │   └── new LengthAwarePaginator() - create paginated response
+   │
+   ├── $request->file('search_image')->storeAs() - store temp search image
+   ├── $request->session()->put('current_search_image', $searchImagePath)
+   │
+   └── return view('ai-search.results', $data)
+
+================================================================================
+
+WORKFLOW 3: BATCH EMBEDDING GENERATION COMMAND
+===============================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        BATCH PROCESSING WORKFLOW                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Command: php artisan posts:generate-embeddings --limit=10 --force
+   ↓
+   GeneratePostEmbeddings@handle()
+   │
+   ├── $this->option('limit') - get command options
+   ├── $this->option('force')
+   │
+   ├── Post::whereNotNull('images') - build query
+   │   │
+   │   └── if (!$force): ->whereNull('embeddings')
+   │
+   ├���─ $query->limit($limit)->get() - fetch posts
+   ├── $this->output->createProgressBar($posts->count())
+   │
+   ├── For each $post in $posts:
+   │   │
+   │   ├── ClipEmbeddingService@generateEmbeddingFromStoragePath($post->images)
+   │   │   │
+   │   │   ├── storage_path('app/public/' . $storagePath)
+   │   │   ├── file_exists($fullPath)
+   │   │   │
+   │   │   └── LocalClipEmbeddingClient@generateEmbeddingFromFile($fullPath)
+   │   │       │
+   │   │       ├── file_exists($imagePath)
+   │   │       ├── shell_exec("python local_clip.py --quiet $imagePath")
+   │   │       │   │
+   │   │       │   └── PYTHON EXECUTION (same as above workflows)
+   │   │       │
+   │   │       └── json_decode($output)
+   │   │
+   │   ├── if ($embedding): $post->update(['embeddings' => $embedding])
+   │   ├── Log::info() or Log::warning() - logging
+   │   └── $progressBar->advance()
+   │
+   ├── $progressBar->finish()
+   └── Report success/failure counts
+
+================================================================================
+
+WORKFLOW 4: SIMILARITY SEARCH DETAILED FLOW
+============================================
+
+┌────────────────────���────────────────────────────────────────────────────────┐
+│                         SIMILARITY CALCULATION                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+ClipEmbeddingService@findSimilarPostsPaginated($queryEmbedding, $threshold, $request)
+│
+├── Database Query:
+│   │
+│   ├── Post::whereNotNull('embeddings')
+│   ├── ->where('images', '!=', null)
+│   ├── ->with('user')
+│   └── ->get() - fetch all posts with embeddings
+│
+├── Similarity Calculation Loop:
+│   │
+│   └── foreach ($posts as $post):
+│       │
+│       ├── if ($post->embeddings):
+│       │   │
+│       │   ├── ClipEmbeddingService@cosineSimilarity($queryEmbedding, $post->embeddings)
+│       │   │   │
+│       │   │   ├── Validation: count($embedding1) === count($embedding2)
+│       │   │   │
+│       │   │   ├── Calculate dot product:
+│       │   │   │   └── for ($i = 0; $i < count($embedding1); $i++)
+│       │   │   │       └─��� $dotProduct += $embedding1[$i] * $embedding2[$i]
+│       │   │   │
+│       │   │   ├── Calculate norms:
+│       │   │   │   ├── $norm1 += $embedding1[$i] * $embedding1[$i]
+│       │   │   │   ├── $norm2 += $embedding2[$i] * $embedding2[$i]
+│       │   │   │   ├── $norm1 = sqrt($norm1)
+│       │   │   │   └── $norm2 = sqrt($norm2)
+│       │   │   │
+│       │   │   └── return $dotProduct / ($norm1 * $norm2)
+│       │   │
+│       │   └── if ($similarity >= $threshold):
+│       │       └── $similarities[] = ['post' => $post, 'similarity' => $similarity]
+│       │
+│       └── continue to next post
+│
+├── Result Processing:
+│   │
+│   ├── usort($similarities, function($a, $b) {
+│   │   └── return $b['similarity'] <=> $a['similarity'] - sort desc
+│   │   })
+│   │
+│   ├── collect($similarities) - convert to Laravel collection
+│   │
+│   ├── Pagination:
+│   │   │
+│   │   ├── $perPage = 15
+│   │   ├── $currentPage = $request->get('page', 1)
+│   │   ├── $currentItems = $collection->slice(($currentPage - 1) * $perPage, $perPage)
+│   │   │
+│   │   └── new LengthAwarePaginator($currentItems, $collection->count(), $perPage, $currentPage, $options)
+│   │
+│   └── $paginator->appends($request->query()) - preserve query params
+│
+└── return $paginator
+
+================================================================================
+
+WORKFLOW 5: PYTHON CLIP MODEL INITIALIZATION
+=============================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        PYTHON CLIP INITIALIZATION                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+local_clip.py execution:
+│
+├── main() function entry point
+│   │
+│   ├── sys.argv parsing - get command line arguments
+│   ├── "--quiet" in sys.argv - check for quiet mode
+│   │
+│   └── LocalClipEmbedding(verbose=not quiet_mode)
+│       │
+│       ├── LocalClipEmbedding.__init__(self, verbose=False)
+│       │   │
+│       │   ├── self._select_best_device(verbose)
+│       │   │   │
+│       │   │   ├── torch.cuda.is_available() - check CUDA
+│       │   │   │
+│       │   │   ├── if CUDA available:
+│       │   │   │   ├── torch.cuda.get_device_properties(0).total_memory
+│       │   │   │   ├── torch.cuda.get_device_name(0)
+│       │   │   │   ├── gpu_memory_mb = gpu_memory / (1024**2)
+│       │   │   │   │
+│       │   │   │   └── if gpu_memory_mb >= 600: return "cuda"
+│       │   │   │       else: return "cpu"
+│       │   │   │
+│       │   │   ├── if CUDA not available:
+│       │   │   │   ├── platform.processor() - get CPU info
+│       │   │   │   ├── psutil.virtual_memory().total - get RAM
+│       │   │   │   └── return "cpu"
+│       │   │   │
+│       │   │   └── Device selection complete
+│       │   │
+│       │   ├── clip.load("ViT-B/32", device=self.device)
+│       │   │   │
+│       │   │   ├── Download model if not cached
+│       │   │   ├── Load model weights
+│       │   │   ├── Initialize preprocessing pipeline
+│       │   │   └── Move model to selected device
+│       │   │
+│       │   ├── self.model.eval() - set to evaluation mode
+│       │   │
+│       │   └── Exception handling for GPU fallback:
+│       │       │
+│       │       └── if device == "cuda" and error:
+│       │           ├── self.device = "cpu"
+│       │           └── retry clip.load() on CPU
+│       │
+│       └── Model initialization complete
+│
+├── Image processing branch:
+│   │
+│   ├── if sys.argv[1] == "--base64":
+│   │   └── generate_embedding_from_base64(base64_data)
+│   │
+│   └── else:
+│       │
+│       ├── os.path.exists(image_path) - validate file
+│       └── generate_embedding(image_path)
+│           │
+│           ├── Image.open(image_path) - load image
+│           ├── image.convert('RGB') - ensure RGB format
+│           ├── self.preprocess(image) - apply CLIP preprocessing
+│           │   │
+│           │   ├── Resize to 224x224
+│           │   ├── Center crop
+│           │   ├── Convert to tensor
+│           │   ├── Normalize with CLIP means/stds
+│           │   └── Add batch dimension
+│           │
+│           ├── image_input.to(self.device) - move to device
+│           │
+│           ├── torch.no_grad(): - disable gradients
+│           │   │
+│           │   ├── self.model.encode_image(image_input)
+│           │   │   │
+│           │   │   ├── Vision Transformer forward pass
+│           │   │   ├── Patch embedding
+│           │   │   ├── Positional encoding
+│           │   │   ├── Transformer layers (12 layers)
+│           │   │   └── Final projection to 512 dimensions
+│           │   │
+│           │   └── image_features / image_features.norm() - L2 normalize
+│           │
+│           ├── image_features.cpu().numpy() - move to CPU
+│           ├── .flatten().tolist() - convert to Python list
+│           │
+│           └── return JSON response with embedding
+│
+└── json.dumps(result) - output JSON to stdout
+
+================================================================================
+
+FUNCTION CALL SUMMARY
+=====================
+
+KEY FUNCTIONS BY COMPONENT:
+
+Laravel (PHP):
+--------------
+• PostController@store() - handles post creation
+• GeneratePostEmbeddings@handle() - batch processing command
+• AIImageSearchController@index() - search page
+• AIImageSearchController@search() - search execution
+• ClipEmbeddingService@generateEmbedding() - main embedding method
+• ClipEmbeddingService@generateEmbeddingFromStoragePath() - from file path
+• ClipEmbeddingService@cosineSimilarity() - similarity calculation
+• ClipEmbeddingService@findSimilarPostsPaginated() - search with pagination
+• Post::create() / Post::update() - database operations
+
+PHP Bridge:
+-----------
+• LocalClipEmbeddingClient@generateEmbeddingFromFile() - file processing
+• LocalClipEmbeddingClient@generateEmbeddingFromUploadedFile() - upload processing
+• LocalClipEmbeddingClient@generateEmbeddingFromBase64() - base64 processing
+• shell_exec() - Python script execution
+• json_decode() - response parsing
+
+Python CLIP:
+------------
+• LocalClipEmbedding.__init__() - model initialization
+• LocalClipEmbedding._select_best_device() - device selection
+• LocalClipEmbedding.generate_embedding() - main embedding generation
+• LocalClipEmbedding.generate_embedding_from_base64() - base64 processing
+• clip.load() - model loading
+• model.encode_image() - CLIP encoding
+• Image.open() - image loading
+• preprocess() - image preprocessing
+
+Database Operations:
+-------------------
+• Post::whereNotNull('embeddings') - query posts with embeddings
+• Post::whereNull('embeddings') - query posts without embeddings
+• $post->update(['embeddings' => $embedding]) - save embedding
+• ->with('user') - eager load relationships
+
+File System:
+-----------
+• file_exists() - file validation
+• storage_path() - path resolution
+• $file->storeAs() - file storage
+• Storage::disk('public')->delete() - cleanup
+
+================================================================================
+                              END OF WORKFLOW DIAGRAM
+================================================================================

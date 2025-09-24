@@ -124,16 +124,4 @@ class AIImageSearchController extends Controller
         }
     }
 
-    /**
-     * Manual cleanup endpoint (can be called via AJAX)
-     */
-    public function cleanup(Request $request)
-    {
-        $this->cleanupPreviousSearchImages();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Search images cleaned up successfully'
-        ]);
     }
-}
