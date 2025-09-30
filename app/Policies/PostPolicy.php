@@ -21,7 +21,7 @@ class PostPolicy
      */
     public function view(User $user, Post $post): bool
     {
-        return !$post->is_flagged;
+        return true;
     }
 
     /**

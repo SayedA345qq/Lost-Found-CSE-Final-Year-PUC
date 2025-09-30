@@ -23,9 +23,7 @@ return new class extends Migration
             $table->json('embeddings')->nullable();
             $table->enum('type', ['lost', 'found']);
             $table->enum('status', ['active', 'resolved'])->default('active');
-            $table->boolean('is_flagged')->default(false);
-            $table->integer('flag_count')->default(0);
-            $table->timestamps();
+                        $table->timestamps();
         });
     }
 

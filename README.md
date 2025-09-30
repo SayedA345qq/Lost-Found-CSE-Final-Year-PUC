@@ -19,15 +19,12 @@ A modern web application built with Laravel that helps people find their lost it
 ### User Management & Safety
 - **User Dashboard** - Comprehensive management of posts, claims, messages, and notifications
 - **Post Status Management** - Mark items as active or resolved with bulk operations
-- **Content Moderation** - Report inappropriate content with flagging system
 - **Notification Center** - Real-time in app notifications for found & claims
 
 ### Community Features
 - **Success Stories** - Showcase successful item reunions to inspire the community
 - **User Feedback System** - Collect and manage user feedback for platform improvement
 
-### Administrative Features
-- **Flagged Content Management** - Review and restore flagged posts, comments, and messages
 
 ## Screenshots
 

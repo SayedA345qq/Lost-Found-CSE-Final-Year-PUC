@@ -16,9 +16,7 @@ return new class extends Migration
             $table->foreignId('post_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->text('message');
-            $table->boolean('is_flagged')->default(false);
-            $table->integer('flag_count')->default(0);
-            $table->timestamps();
+                        $table->timestamps();
         });
     }
 

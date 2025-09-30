@@ -22,7 +22,6 @@ class PostController extends Controller
     public function index(Request $request)
     {
         $query = Post::with(['user', 'claims', 'comments'])
-            ->active()
             ->latest();
 
         // Apply filters

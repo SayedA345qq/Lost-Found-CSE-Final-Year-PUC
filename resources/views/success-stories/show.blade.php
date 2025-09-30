@@ -195,7 +195,7 @@
                     <div class="p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">💬 Community Comments</h3>
                         <div class="space-y-4">
-                            @foreach($post->comments->where('is_flagged', false) as $comment)
+                            @foreach($post->comments as $comment)
                                 <div class="border-l-4 border-gray-200 pl-4">
                                     <div class="flex justify-between items-start">
                                         <div>

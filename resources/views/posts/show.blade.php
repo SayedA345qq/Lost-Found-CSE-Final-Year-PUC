@@ -160,12 +160,7 @@
                                     Send Message
                                 </a>
 
-                                <!-- Report Button -->
-                                <a href="{{ route('reports.create', ['type' => 'post', 'id' => $post->id]) }}" 
-                                   class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                                    Report
-                                </a>
-                            </div>
+                                                            </div>
                         </div>
                     </div>
                 @endif
@@ -304,7 +299,7 @@
                     <!-- Comments List -->
                     @if($post->comments->count() > 0)
                         <div class="space-y-4">
-                            @foreach($post->comments->where('is_flagged', false) as $comment)
+                            @foreach($post->comments as $comment)
                                 <div class="flex space-x-3" id="comment-{{ $comment->id }}">
                                     <x-user-avatar :user="$comment->user" size="sm" class="flex-shrink-0" />
                                     <div class="flex-1">

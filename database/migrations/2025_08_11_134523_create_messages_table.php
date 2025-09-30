@@ -20,9 +20,7 @@ return new class extends Migration
             $table->boolean('is_read')->default(false);
             $table->boolean('sender_deleted')->default(false);
             $table->boolean('receiver_deleted')->default(false);
-            $table->boolean('is_flagged')->default(false);
-            $table->integer('flag_count')->default(0);
-            $table->timestamps();
+                        $table->timestamps();
         });
     }
 

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
 class Post extends Model
@@ -21,14 +20,11 @@ class Post extends Model
         'embeddings',
         'type',
         'status',
-        'is_flagged',
-        'flag_count'
-    ];
+            ];
 
     protected $casts = [
         'date_lost_found' => 'date',
-        'is_flagged' => 'boolean',
-        'embeddings' => 'array'
+                'embeddings' => 'array'
     ];
 
     protected static function boot()
@@ -60,9 +56,7 @@ class Post extends Model
             // Delete related messages
             $post->messages()->delete();
 
-            // Delete related reports
-            $post->reports()->delete();
-        });
+                    });
     }
 
     public function user(): BelongsTo
@@ -90,16 +84,8 @@ class Post extends Model
         return $this->hasMany(Message::class);
     }
 
-    public function reports(): MorphMany
-    {
-        return $this->morphMany(Report::class, 'reportable');
-    }
-
-    public function scopeActive($query)
-    {
-        return $query->where('is_flagged', false);
-    }
-
+    
+    
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);

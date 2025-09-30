@@ -5,7 +5,6 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\ClaimController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\MessageController;
-use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FoundNotificationController;
 use App\Http\Controllers\AIImageSearchController;
@@ -77,16 +76,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/messages/{post}/{user}/clear', [MessageController::class, 'clearConversation'])->name('messages.clear-conversation');
     Route::get('/posts/{post}/message', [MessageController::class, 'create'])->name('messages.create');
 
-    // Report routes
-    Route::get('/report', [ReportController::class, 'create'])->name('reports.create');
-    Route::post('/report', [ReportController::class, 'store'])->name('reports.store');
-
-    // Flagged content routes
-    Route::get('/flagged-content', [App\Http\Controllers\FlaggedContentController::class, 'index'])->name('flagged-content.index');
-    Route::patch('/flagged-content/posts/{post}/restore', [App\Http\Controllers\FlaggedContentController::class, 'restorePost'])->name('flagged-content.restore-post');
-    Route::patch('/flagged-content/comments/{comment}/restore', [App\Http\Controllers\FlaggedContentController::class, 'restoreComment'])->name('flagged-content.restore-comment');
-    Route::patch('/flagged-content/messages/{message}/restore', [App\Http\Controllers\FlaggedContentController::class, 'restoreMessage'])->name('flagged-content.restore-message');
-
+    
+    
     // Notification routes
     Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
