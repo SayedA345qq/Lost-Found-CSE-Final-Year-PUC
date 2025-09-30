@@ -15,7 +15,7 @@ class GeneratePostEmbeddings extends Command
      * @var string
      */
     protected $signature = 'posts:generate-embeddings 
-                            {--limit=10 : Number of posts to process at once}
+                            {--limit=0 : Number of posts to process at once (0 for all)}
                             {--force : Regenerate embeddings for posts that already have them}';
 
     /**
@@ -50,7 +50,11 @@ class GeneratePostEmbeddings extends Command
             $query->whereNull('embeddings');
         }
 
-        $posts = $query->limit($limit)->get();
+        if ($limit > 0) {
+            $posts = $query->limit($limit)->get();
+        } else {
+            $posts = $query->get();
+        }
 
         if ($posts->isEmpty()) {
             $this->info('No posts found that need embedding generation.');
