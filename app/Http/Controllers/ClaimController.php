@@ -132,47 +132,4 @@ class ClaimController extends Controller
         return view('claims.index', compact('claims', 'filter', 'sort', 'search'));
     }
 
-    /**
-     * Show claims for user's posts
-     */
-    public function received(Request $request)
-    {
-        $filter = $request->get('filter', 'all'); // all, pending, accepted, rejected
-        $sort = $request->get('sort', 'latest'); // latest, oldest
-        $search = $request->get('search');
-
-        $query = Claim::with(['post', 'user'])
-            ->whereHas('post', function ($query) {
-                $query->where('user_id', auth()->id());
-            });
-
-        // Apply status filter
-        if ($filter !== 'all') {
-            $query->where('status', $filter);
-        }
-
-        // Apply search filter
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('message', 'like', '%' . $search . '%')
-                  ->orWhereHas('user', function ($userQuery) use ($search) {
-                      $userQuery->where('name', 'like', '%' . $search . '%');
-                  })
-                  ->orWhereHas('post', function ($postQuery) use ($search) {
-                      $postQuery->where('title', 'like', '%' . $search . '%');
-                  });
-            });
-        }
-
-        // Apply sorting
-        if ($sort === 'oldest') {
-            $query->oldest();
-        } else {
-            $query->latest();
-        }
-
-        $claims = $query->paginate(10);
-
-        return view('claims.received', compact('claims', 'filter', 'sort', 'search'));
     }
-}

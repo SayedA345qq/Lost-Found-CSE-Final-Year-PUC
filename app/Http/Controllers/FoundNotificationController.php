@@ -54,11 +54,16 @@ class FoundNotificationController extends Controller
         $foundNotification->update(['status' => 'accepted']);
         $foundNotification->post->update(['status' => 'resolved']);
 
-        // Reject all other pending found notifications for this post
-        FoundNotification::where('post_id', $foundNotification->post_id)
+        // Get all other pending found notifications for this post to reject them
+        $otherNotifications = FoundNotification::where('post_id', $foundNotification->post_id)
             ->where('id', '!=', $foundNotification->id)
             ->where('status', 'pending')
-            ->update(['status' => 'rejected']);
+            ->get();
+
+        // Reject all other pending found notifications (no notifications sent)
+        foreach ($otherNotifications as $otherNotification) {
+            $otherNotification->update(['status' => 'rejected']);
+        }
 
         return back()->with('success', 'Found notification accepted successfully!');
     }

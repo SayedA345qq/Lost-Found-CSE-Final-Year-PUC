@@ -32,14 +32,16 @@ class ProfileController extends Controller
 
         // Handle profile image upload
         if ($request->hasFile('profile_image')) {
+            $file = $request->file('profile_image');
+            
             // Delete old profile image if it exists
             if ($user->profile_image && Storage::disk('public')->exists($user->profile_image)) {
                 Storage::disk('public')->delete($user->profile_image);
             }
 
             // Store new profile image
-            $profileImagePath = $request->file('profile_image')->store('profile-images', 'public');
-            $validated['profile_image'] = $profileImagePath;
+            $path = $file->store('profile-images', 'public');
+            $validated['profile_image'] = $path;
         }
 
         $user->fill($validated);
@@ -50,7 +52,7 @@ class ProfileController extends Controller
 
         $user->save();
 
-        return Redirect::route('profile.edit')->with('success', 'Profile updated successfully!');
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**

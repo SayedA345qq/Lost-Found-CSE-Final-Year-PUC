@@ -93,8 +93,8 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getProfileImageUrl(): string
     {
-        if ($this->profile_image && \Storage::disk('public')->exists($this->profile_image)) {
-            return \Storage::url($this->profile_image);
+        if ($this->profile_image) {
+            return asset('storage/' . $this->profile_image);
         }
         
         // Return a default placeholder or generate initials-based avatar

@@ -162,6 +162,9 @@ class PostController extends Controller
             'images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
+        $oldStatus = $post->status;
+        $newStatus = $validated['status'];
+
         $imagePath = $post->images;
         $imageUpdated = false;
         $embedding = $post->embeddings;
@@ -188,9 +191,23 @@ class PostController extends Controller
         $validated['images'] = $imagePath;
         $validated['embeddings'] = $embedding;
 
+        // If changing from resolved to active, delete all claims and found notifications
+        if ($oldStatus === 'resolved' && $newStatus === 'active') {
+            // Delete all claims for this post
+            $post->claims()->delete();
+            
+            // Delete all found notifications for this post
+            $post->foundNotifications()->delete();
+        }
+
         $post->update($validated);
 
-        return redirect()->route('posts.show', $post)->with('success', 'Post updated successfully!');
+        $message = 'Post updated successfully!';
+        if ($oldStatus === 'resolved' && $newStatus === 'active') {
+            $message = 'Post updated successfully! All previous claims and found notifications have been cleared.';
+        }
+
+        return redirect()->route('posts.show', $post)->with('success', $message);
     }
 
     /**
@@ -224,9 +241,26 @@ class PostController extends Controller
             'status' => 'required|in:active,resolved'
         ]);
 
+        $oldStatus = $post->status;
+        $newStatus = $validated['status'];
+
+        // If changing from resolved to active, delete all claims and found notifications
+        if ($oldStatus === 'resolved' && $newStatus === 'active') {
+            // Delete all claims for this post
+            $post->claims()->delete();
+            
+            // Delete all found notifications for this post
+            $post->foundNotifications()->delete();
+        }
+
         $post->update($validated);
 
-        return back()->with('success', 'Status updated successfully!');
+        $message = 'Status updated successfully!';
+        if ($oldStatus === 'resolved' && $newStatus === 'active') {
+            $message = 'Status updated successfully! All previous claims and found notifications have been cleared.';
+        }
+
+        return back()->with('success', $message);
     }
 
     /**
@@ -306,5 +340,49 @@ class PostController extends Controller
         }
 
         return redirect()->route('posts.my-posts')->with('success', "Successfully deleted {$deletedCount} post(s).");
+    }
+
+    /**
+     * Show all claims and found notifications for a post
+     */
+    public function showClaimsAndFound(Request $request, Post $post)
+    {
+        $this->authorize('update', $post);
+        
+        // Get sort parameter
+        $sortBy = $request->get('sort', 'latest'); // latest, oldest
+        
+        $post->load(['user']);
+        
+        if ($post->type === 'found') {
+            // Handle claims
+            $query = $post->claims()->with('user');
+            
+            // Apply sorting
+            if ($sortBy === 'oldest') {
+                $query->oldest();
+            } else {
+                $query->latest();
+            }
+            
+            $claims = $query->paginate(10)->appends($request->query());
+            $post->claims = $claims;
+            
+        } else {
+            // Handle found notifications
+            $query = $post->foundNotifications()->with('finder');
+            
+            // Apply sorting
+            if ($sortBy === 'oldest') {
+                $query->oldest();
+            } else {
+                $query->latest();
+            }
+            
+            $foundNotifications = $query->paginate(10)->appends($request->query());
+            $post->foundNotifications = $foundNotifications;
+        }
+        
+        return view('posts.claims-and-found', compact('post', 'sortBy'));
     }
 }

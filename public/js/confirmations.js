@@ -90,14 +90,21 @@ class ConfirmationSystem {
     }
 
     // Confirm status update
-    confirmStatusUpdate(postTitle, newStatus) {
+    confirmStatusUpdate(postTitle, newStatus, currentStatus = null) {
         const statusText = newStatus === 'resolved' ? 'mark as resolved' : 'mark as active';
+        let message = `Are you sure you want to ${statusText} "${postTitle}"?`;
+        
+        // Special warning when changing from resolved to active
+        if (currentStatus === 'resolved' && newStatus === 'active') {
+            message = `Are you sure you want to mark "${postTitle}" as active? This will delete all existing claims and found notifications for this post.`;
+        }
+        
         this.showConfirmation({
             title: 'Update Status',
-            message: `Are you sure you want to ${statusText} "${postTitle}"?`,
+            message: message,
             confirmText: 'Update',
             confirmClass: 'bg-blue-500 hover:bg-blue-700',
-            icon: 'info',
+            icon: newStatus === 'active' && currentStatus === 'resolved' ? 'warning' : 'info',
             onConfirm: () => {
                 this.submitCurrentFormWithValidation();
             }
@@ -190,6 +197,20 @@ class ConfirmationSystem {
             }
         });
     }
+
+    // Confirm profile image removal
+    confirmRemoveProfileImage() {
+        this.showConfirmation({
+            title: 'Remove Profile Picture',
+            message: 'Are you sure you want to remove your profile picture?',
+            confirmText: 'Remove',
+            confirmClass: 'bg-red-500 hover:bg-red-700',
+            icon: 'warning',
+            onConfirm: () => {
+                this.submitCurrentFormWithValidation();
+            }
+        });
+    }
 }
 
 // Initialize global confirmation system
@@ -265,9 +286,9 @@ function confirmBulkDelete(count) {
     confirmationSystem.confirmBulkDelete(count);
 }
 
-function confirmStatusUpdate(form, postTitle, newStatus) {
+function confirmStatusUpdate(form, postTitle, newStatus, currentStatus = null) {
     confirmationSystem.currentForm = form;
-    confirmationSystem.confirmStatusUpdate(postTitle, newStatus);
+    confirmationSystem.confirmStatusUpdate(postTitle, newStatus, currentStatus);
 }
 
 function confirmClaim(form, postTitle) {
@@ -306,6 +327,11 @@ function confirmLogout(form) {
 function confirmClearConversation(form) {
     confirmationSystem.currentForm = form;
     confirmationSystem.confirmClearConversation();
+}
+
+function confirmRemoveProfileImage(form) {
+    confirmationSystem.currentForm = form;
+    confirmationSystem.confirmRemoveProfileImage();
 }
 
 // Close modal when clicking outside

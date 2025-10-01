@@ -52,4 +52,11 @@ class Message extends Model
         return $query->where('is_read', false);
     }
 
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('sender_deleted', false)
+              ->orWhere('receiver_deleted', false);
+        });
     }
+}

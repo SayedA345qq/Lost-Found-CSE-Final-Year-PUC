@@ -123,13 +123,49 @@
                                 <option value="resolved" {{ $post->status === 'resolved' ? 'selected' : '' }}>Resolved</option>
                             </select>
                             <button type="button" 
-                                    onclick="confirmStatusUpdate(this.form, '{{ addslashes($post->title) }}', document.getElementById('statusSelect').value)"
+                                    onclick="confirmStatusUpdate(this.form, '{{ addslashes($post->title) }}', document.getElementById('statusSelect').value, '{{ $post->status }}')"
                                     class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                                 Update Status
                             </button>
                         </form>
                     </div>
                 </div>
+            @endcan
+
+            <!-- Claims and Found Management (for post owner) -->
+            @can('update', $post)
+                @if(($post->type === 'found' && $post->claims->count() > 0) || ($post->type === 'lost' && $post->foundNotifications && $post->foundNotifications->count() > 0))
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">
+                                        @if($post->type === 'found')
+                                            Claims Management
+                                        @else
+                                            Found Notifications Management
+                                        @endif
+                                    </h3>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        @if($post->type === 'found')
+                                            You have {{ $post->claims->count() }} claim(s) for this item
+                                        @else
+                                            You have {{ $post->foundNotifications->count() }} found notification(s) for this item
+                                        @endif
+                                    </p>
+                                </div>
+                                <a href="{{ route('posts.claims-and-found', $post) }}" 
+                                   class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                                    @if($post->type === 'found')
+                                        Show Claims
+                                    @else
+                                        Show Found Notifications
+                                    @endif
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             @endcan
 
             <!-- Action Buttons -->
@@ -166,117 +202,7 @@
                 @endif
             @endauth
 
-            <!-- Claims (for post owner of found items) -->
-            @can('update', $post)
-                @if($post->type === 'found' && $post->claims->count() > 0)
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Claims ({{ $post->claims->count() }})</h3>
-                            <div class="space-y-4">
-                                @foreach($post->claims as $claim)
-                                    <div class="border rounded-lg p-4">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <div class="flex items-center space-x-3">
-                                                <x-user-avatar :user="$claim->user" size="sm" />
-                                                <div>
-                                                    <p class="font-medium">{{ $claim->user->name }}</p>
-                                                    <p class="text-sm text-gray-500">{{ $claim->created_at->diffForHumans() }}</p>
-                                                </div>
-                                            </div>
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                       {{ $claim->status === 'accepted' ? 'bg-green-100 text-green-800' : 
-                                                          ($claim->status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                                {{ ucfirst($claim->status) }}
-                                            </span>
-                                        </div>
-                                        <p class="text-gray-700 mb-3">{{ $claim->message }}</p>
-                                        @if($claim->contact_info)
-                                            <p class="text-sm text-gray-600 mb-3">Contact: {{ $claim->contact_info }}</p>
-                                        @endif
-                                        @if($claim->status === 'pending')
-                                            <div class="flex space-x-2">
-                                                <form method="POST" action="{{ route('claims.accept', $claim) }}" onsubmit="return false;">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="button" 
-                                                            onclick="confirmClaimResponse(this.form, 'accept', '{{ addslashes($claim->user->name) }}')"
-                                                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm">
-                                                        Accept
-                                                    </button>
-                                                </form>
-                                                <form method="POST" action="{{ route('claims.reject', $claim) }}" onsubmit="return false;">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="button" 
-                                                            onclick="confirmClaimResponse(this.form, 'reject', '{{ addslashes($claim->user->name) }}')"
-                                                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm">
-                                                        Reject
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                <!-- Found Notifications (for post owner of lost items) -->
-                @if($post->type === 'lost' && $post->foundNotifications && $post->foundNotifications->count() > 0)
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Found Notifications ({{ $post->foundNotifications->count() }})</h3>
-                            <div class="space-y-4">
-                                @foreach($post->foundNotifications as $foundNotification)
-                                    <div class="border rounded-lg p-4">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <div class="flex items-center space-x-3">
-                                                <x-user-avatar :user="$foundNotification->finder" size="sm" />
-                                                <div>
-                                                    <p class="font-medium">{{ $foundNotification->finder->name }}</p>
-                                                    <p class="text-sm text-gray-500">{{ $foundNotification->created_at->diffForHumans() }}</p>
-                                                </div>
-                                            </div>
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                       {{ $foundNotification->status === 'accepted' ? 'bg-green-100 text-green-800' : 
-                                                          ($foundNotification->status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800') }}">
-                                                {{ ucfirst($foundNotification->status) }}
-                                            </span>
-                                        </div>
-                                        <p class="text-gray-700 mb-3">{{ $foundNotification->message }}</p>
-                                        <p class="text-sm text-gray-600 mb-2"><strong>Found at:</strong> {{ $foundNotification->found_location }}</p>
-                                        <p class="text-sm text-gray-600 mb-3"><strong>Contact:</strong> {{ $foundNotification->contact_info }}</p>
-                                        @if($foundNotification->status === 'pending')
-                                            <div class="flex space-x-2">
-                                                <form method="POST" action="{{ route('found-notifications.accept', $foundNotification) }}" onsubmit="return false;">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="button" 
-                                                            onclick="confirmClaimResponse(this.form, 'accept', '{{ addslashes($foundNotification->finder->name) }}')"
-                                                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm">
-                                                        Accept
-                                                    </button>
-                                                </form>
-                                                <form method="POST" action="{{ route('found-notifications.reject', $foundNotification) }}" onsubmit="return false;">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="button" 
-                                                            onclick="confirmClaimResponse(this.form, 'reject', '{{ addslashes($foundNotification->finder->name) }}')"
-                                                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm">
-                                                        Reject
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                @endif
-            @endcan
-
+            
             <!-- Comments -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
@@ -518,9 +444,16 @@
         }
 
         function confirmUpdateComment(form, commentId) {
-            if (confirm('Are you sure you want to update this comment?')) {
-                form.submit();
-            }
+            confirmationSystem.showConfirmation({
+                title: 'Update Comment',
+                message: 'Are you sure you want to update this comment?',
+                confirmText: 'Update',
+                confirmClass: 'bg-blue-500 hover:bg-blue-700',
+                icon: 'info',
+                onConfirm: () => {
+                    form.submit();
+                }
+            });
         }
     </script>
 </x-app-layout>

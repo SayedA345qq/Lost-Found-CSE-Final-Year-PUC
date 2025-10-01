@@ -86,6 +86,11 @@ class Post extends Model
 
     
     
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);

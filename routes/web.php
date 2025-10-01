@@ -35,8 +35,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/remove-image', [ProfileController::class, 'removeProfileImage'])->name('profile.remove-image');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::delete('/profile/image', [ProfileController::class, 'removeProfileImage'])->name('profile.remove-image');
 
     // Post routes
     Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
@@ -45,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
     Route::patch('/posts/{post}/status', [PostController::class, 'updateStatus'])->name('posts.update-status');
+    Route::get('/posts/{post}/claims-and-found', [PostController::class, 'showClaimsAndFound'])->name('posts.claims-and-found');
     
     // My Posts Management
     Route::get('/my-posts', [PostController::class, 'myPosts'])->name('posts.my-posts');
@@ -55,8 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/claims/{claim}/accept', [ClaimController::class, 'accept'])->name('claims.accept');
     Route::patch('/claims/{claim}/reject', [ClaimController::class, 'reject'])->name('claims.reject');
     Route::get('/my-claims', [ClaimController::class, 'index'])->name('claims.index');
-    Route::get('/received-claims', [ClaimController::class, 'received'])->name('claims.received');
-
+    
     // Found notification routes
     Route::post('/posts/{post}/found-notifications', [FoundNotificationController::class, 'store'])->name('found-notifications.store');
     Route::patch('/found-notifications/{foundNotification}/accept', [FoundNotificationController::class, 'accept'])->name('found-notifications.accept');

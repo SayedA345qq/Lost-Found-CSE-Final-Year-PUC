@@ -37,14 +37,9 @@
                         
                         <!-- Remove Button (only show if user has a profile image) -->
                         @if($user->profile_image)
-                            <form method="post" action="{{ route('profile.remove-image') }}" class="inline">
-                                @csrf
-                                @method('delete')
-                                <button type="submit" class="bg-red-100 py-2 px-3 border border-red-300 rounded-md shadow-sm text-sm leading-4 font-medium text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                        onclick="return confirm('Are you sure you want to remove your profile picture?')">
-                                    Remove
-                                </button>
-                            </form>
+                            <button type="button" onclick="removeProfileImage()" class="bg-red-100 py-2 px-3 border border-red-300 rounded-md shadow-sm text-sm leading-4 font-medium text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                Remove
+                            </button>
                         @endif
                     </div>
                     <p class="mt-2 text-xs text-gray-500">JPG, PNG, GIF up to 2MB</p>
@@ -100,14 +95,42 @@
     <script>
         function previewImage(input) {
             if (input.files && input.files[0]) {
+                const file = input.files[0];
                 const reader = new FileReader();
                 
                 reader.onload = function(e) {
                     document.getElementById('profile-preview').src = e.target.result;
                 }
                 
-                reader.readAsDataURL(input.files[0]);
+                reader.readAsDataURL(file);
             }
+        }
+
+        function removeProfileImage() {
+            // Use the existing confirmation system
+            confirmationSystem.showConfirmation({
+                title: 'Remove Profile Picture',
+                message: 'Are you sure you want to remove your profile picture?',
+                confirmText: 'Remove',
+                confirmClass: 'bg-red-500 hover:bg-red-700',
+                icon: 'warning',
+                onConfirm: () => {
+                    // Create a form and submit it
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '{{ route("profile.remove-image") }}';
+                    
+                    // Add CSRF token
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = '{{ csrf_token() }}';
+                    form.appendChild(csrfToken);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         }
     </script>
 </section>
