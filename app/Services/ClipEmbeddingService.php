@@ -4,17 +4,16 @@ namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
-
-// Include the existing LocalClipEmbeddingClient
-require_once base_path('local_clip_api.php');
+use Illuminate\Support\Facades\Http;
 
 class ClipEmbeddingService
 {
-    private $clipClient;
+    private $apiUrl;
 
     public function __construct()
     {
-        $this->clipClient = new \LocalClipEmbeddingClient();
+        // Use local Flask API that connects to Hugging Face Space
+        $this->apiUrl = env('CLIP_API_URL', 'http://localhost:5000');
     }
 
     /**
@@ -31,18 +30,33 @@ class ClipEmbeddingService
         }
 
         try {
-            $result = $this->clipClient->generateEmbeddingFromUploadedFile($file);
-            
-            if ($result && $result['success'] && isset($result['embedding'])) {
-                Log::info('Successfully generated embedding', [
-                    'embedding_dim' => count($result['embedding']),
-                    'model' => $result['model'] ?? 'unknown',
-                    'device' => $result['device'] ?? 'unknown'
-                ]);
-                return $result['embedding'];
+            $imageData = file_get_contents($file->getPathname());
+            $imageName = $file->getClientOriginalName();
+
+            $response = Http::timeout(120)
+                ->attach('image', $imageData, $imageName)
+                ->post($this->apiUrl . '/generate-embedding');
+
+            if ($response->successful()) {
+                $result = $response->json();
+                
+                if (isset($result['success']) && $result['success'] && isset($result['embedding'])) {
+                    Log::info('Successfully generated embedding', [
+                        'embedding_dim' => count($result['embedding']),
+                        'model' => $result['model'] ?? 'unknown',
+                        'source' => 'Hugging Face Space'
+                    ]);
+                    return $result['embedding'];
+                }
+                
+                Log::error('Failed to generate embedding', ['result' => $result]);
+                return null;
             }
-            
-            Log::error('Failed to generate embedding', ['result' => $result]);
+
+            Log::error('API request failed', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
             return null;
         } catch (\Exception $e) {
             Log::error('Exception during embedding generation', ['error' => $e->getMessage()]);
@@ -54,11 +68,48 @@ class ClipEmbeddingService
      * Generate embedding for an image file path
      * 
      * @param string $imagePath
-     * @return array
+     * @return array|null
      */
-    public function generateEmbeddingFromFile(string $imagePath): array
+    public function generateEmbeddingFromFile(string $imagePath): ?array
     {
-        return $this->clipClient->generateEmbeddingFromFile($imagePath);
+        if (!file_exists($imagePath)) {
+            Log::error('Image file not found', ['path' => $imagePath]);
+            return null;
+        }
+
+        try {
+            $imageData = file_get_contents($imagePath);
+            $imageName = basename($imagePath);
+
+            $response = Http::timeout(120)
+                ->attach('image', $imageData, $imageName)
+                ->post($this->apiUrl . '/generate-embedding');
+
+            if ($response->successful()) {
+                $result = $response->json();
+                
+                if (isset($result['success']) && $result['success'] && isset($result['embedding'])) {
+                    Log::info('Successfully generated embedding from file', [
+                        'path' => $imagePath,
+                        'embedding_dim' => count($result['embedding']),
+                        'model' => $result['model'] ?? 'unknown'
+                    ]);
+                    return $result['embedding'];
+                }
+                
+                Log::error('Failed to generate embedding from file', ['result' => $result]);
+                return null;
+            }
+
+            Log::error('API request failed for file', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Exception during embedding generation from file', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     /**
@@ -77,19 +128,33 @@ class ClipEmbeddingService
         }
 
         try {
-            $result = $this->clipClient->generateEmbeddingFromFile($fullPath);
-            
-            if ($result && $result['success'] && isset($result['embedding'])) {
-                Log::info('Successfully generated embedding from storage', [
-                    'path' => $storagePath,
-                    'embedding_dim' => count($result['embedding']),
-                    'model' => $result['model'] ?? 'unknown',
-                    'device' => $result['device'] ?? 'unknown'
-                ]);
-                return $result['embedding'];
+            $imageData = file_get_contents($fullPath);
+            $imageName = basename($fullPath);
+
+            $response = Http::timeout(120)
+                ->attach('image', $imageData, $imageName)
+                ->post($this->apiUrl . '/generate-embedding');
+
+            if ($response->successful()) {
+                $result = $response->json();
+                
+                if (isset($result['success']) && $result['success'] && isset($result['embedding'])) {
+                    Log::info('Successfully generated embedding from storage', [
+                        'path' => $storagePath,
+                        'embedding_dim' => count($result['embedding']),
+                        'model' => $result['model'] ?? 'unknown'
+                    ]);
+                    return $result['embedding'];
+                }
+                
+                Log::error('Failed to generate embedding from storage path', ['result' => $result]);
+                return null;
             }
-            
-            Log::error('Failed to generate embedding from storage path', ['result' => $result]);
+
+            Log::error('API request failed for storage path', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
             return null;
         } catch (\Exception $e) {
             Log::error('Exception during embedding generation from storage', ['error' => $e->getMessage()]);
