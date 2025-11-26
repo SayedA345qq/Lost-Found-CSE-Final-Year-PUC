@@ -4,10 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Post;
-use App\Models\Comment;
-use App\Models\Claim;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class PostSeeder extends Seeder
 {
@@ -16,109 +13,84 @@ class PostSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create test users
-        $user1 = User::create([
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'password' => Hash::make('password'),
-        ]);
-
-        $user2 = User::create([
-            'name' => 'Jane Smith',
-            'email' => 'jane@example.com',
-            'password' => Hash::make('password'),
-        ]);
-
-        $user3 = User::create([
-            'name' => 'Mike Johnson',
-            'email' => 'mike@example.com',
-            'password' => Hash::make('password'),
-        ]);
-
-        // Create sample posts
-        $posts = [
+        // Create 4 users with password "12345678"
+        $users = [
             [
-                'user_id' => $user1->id,
-                'title' => 'Lost iPhone 14 Pro',
-                'description' => 'Lost my black iPhone 14 Pro near Central Park. It has a blue case with my initials "JD" on it. Very important as it contains family photos. Please contact me if found.',
-                'category' => 'electronics',
-                'location' => 'Central Park, New York',
-                'date_lost_found' => now()->subDays(2),
-                'type' => 'lost',
-                'status' => 'active',
+                'name' => 'User One',
+                'email' => 'user1@example.com',
+                'password' => '12345678',
+                'email_verified_at' => now(),
             ],
             [
-                'user_id' => $user2->id,
-                'title' => 'Found Golden Retriever',
-                'description' => 'Found a friendly golden retriever wandering around Main Street. The dog is wearing a red collar but no tags. Very well-behaved and seems to be house-trained. Currently staying at my place.',
-                'category' => 'pet',
-                'location' => 'Main Street, Downtown',
-                'date_lost_found' => now()->subDays(1),
-                'type' => 'found',
-                'status' => 'active',
-            ],
-                        [
-                'user_id' => $user1->id,
-                'title' => 'Found Wallet',
-                'description' => 'Found a brown leather wallet on the bus. Contains ID, credit cards, and some cash. No contact information visible. Turned it in to the bus company but posting here too.',
-                'category' => 'other',
-                'location' => 'Bus Route 42',
-                'date_lost_found' => now()->subDays(3),
-                'type' => 'found',
-                'status' => 'resolved',
+                'name' => 'User Two',
+                'email' => 'user2@example.com',
+                'password' => '12345678',
+                'email_verified_at' => now(),
             ],
             [
-                'user_id' => $user2->id,
-                'title' => 'Lost Diamond Ring',
-                'description' => 'Lost my grandmother\'s diamond engagement ring at the beach. It\'s a vintage piece with a small diamond in a gold setting. Extremely sentimental value. Reward offered.',
-                'category' => 'jewelry',
-                'location' => 'Sunset Beach',
-                'date_lost_found' => now()->subDays(5),
-                'type' => 'lost',
-                'status' => 'still_missing',
+                'name' => 'User Three',
+                'email' => 'user3@example.com',
+                'password' => '12345678',
+                'email_verified_at' => now(),
             ],
             [
-                'user_id' => $user3->id,
-                'title' => 'Found Prescription Glasses',
-                'description' => 'Found a pair of prescription glasses in a black case near the coffee shop. The glasses have a thin metal frame. Someone must be looking for these!',
-                'category' => 'other',
-                'location' => 'Coffee Corner, 5th Avenue',
-                'date_lost_found' => now()->subHours(12),
-                'type' => 'found',
-                'status' => 'active',
+                'name' => 'User Four',
+                'email' => 'user4@example.com',
+                'password' => '12345678',
+                'email_verified_at' => now(),
             ],
         ];
 
-        foreach ($posts as $postData) {
-            $post = Post::create($postData);
+        $createdUsers = collect($users)->map(fn ($data) => User::create($data));
 
-            // Add some comments
-            if (rand(0, 1)) {
-                Comment::create([
-                    'post_id' => $post->id,
-                    'user_id' => $user1->id,
-                    'message' => 'I hope you find it soon! I\'ll keep an eye out.',
-                ]);
-            }
+        // For each user create 4 posts: 2 electronics, 1 pet, 1 bike (no images)
+        foreach ($createdUsers as $index => $user) {
+            // 2 electronics
+            Post::create([
+                'user_id' => $user->id,
+                'title' => 'Lost Electronic Device #' . ($index + 1) . 'A',
+                'description' => 'Lost electronic device. No image provided.',
+                'category' => 'electronics',
+                'location' => 'Location A',
+                'date_lost_found' => now()->subDays(2),
+                'type' => 'lost',
+                'status' => 'active',
+            ]);
 
-            if (rand(0, 1)) {
-                Comment::create([
-                    'post_id' => $post->id,
-                    'user_id' => $user2->id,
-                    'message' => 'Have you checked with local authorities?',
-                ]);
-            }
+            Post::create([
+                'user_id' => $user->id,
+                'title' => 'Found Electronic Device #' . ($index + 1) . 'B',
+                'description' => 'Found electronic device. No image provided.',
+                'category' => 'electronics',
+                'location' => 'Location B',
+                'date_lost_found' => now()->subDays(1),
+                'type' => 'found',
+                'status' => 'active',
+            ]);
 
-            // Add claims for found items
-            if ($post->type === 'found' && rand(0, 1)) {
-                Claim::create([
-                    'post_id' => $post->id,
-                    'user_id' => $user1->id,
-                    'message' => 'I think this might be mine! I lost something similar in that area.',
-                    'contact_info' => 'john@example.com',
-                    'status' => 'pending',
-                ]);
-            }
+            // 1 pet
+            Post::create([
+                'user_id' => $user->id,
+                'title' => 'Missing Pet #' . ($index + 1),
+                'description' => 'Pet missing/found. No image provided.',
+                'category' => 'pet',
+                'location' => 'Neighborhood',
+                'date_lost_found' => now()->subDays(3),
+                'type' => 'lost',
+                'status' => 'active',
+            ]);
+
+            // 1 bike
+            Post::create([
+                'user_id' => $user->id,
+                'title' => 'Lost Bike #' . ($index + 1),
+                'description' => 'Bike reported lost. No image provided.',
+                'category' => 'bike',
+                'location' => 'City Park',
+                'date_lost_found' => now()->subDays(4),
+                'type' => 'lost',
+                'status' => 'active',
+            ]);
         }
     }
 }
